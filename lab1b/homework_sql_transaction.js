@@ -81,9 +81,22 @@ async function setupDatabase() {
 
 // ---------------------------------------------------------------
 // Place an order inside ONE transaction (5 strict steps)
+// options.failAfterStep (used by Case 4 only): simulate an unexpected crash right
+// after the given step, to prove that ROLLBACK restores data that was ALREADY changed
 // ---------------------------------------------------------------
-async function placeOrder(customerId, productId, quantity) {
+async function placeOrder(customerId, productId, quantity, options = {}) {
   const conn = await pool.getConnection();
+
+  const simulateCrash = async (step) => {
+    if (options.failAfterStep !== step) return;
+    // Read the data through the same connection: it shows the uncommitted changes
+    const [[c]] = await conn.execute('SELECT balance FROM customers WHERE id = ?', [customerId]);
+    const [[p]] = await conn.execute('SELECT stock FROM products WHERE id = ?', [productId]);
+    const [[o]] = await conn.execute('SELECT COUNT(*) AS total FROM orders');
+    console.log(`   inside the transaction after Step ${step}: balance = ${c.balance}, stock = ${p.stock}, orders = ${o.total}`);
+    throw new Error(`Simulated server crash after Step ${step}`);
+  };
+
   try {
     await conn.beginTransaction();
 
@@ -105,13 +118,16 @@ async function placeOrder(customerId, productId, quantity) {
 
     // Step 2: deduct the amount from the customer's balance
     await conn.execute('UPDATE customers SET balance = balance - ? WHERE id = ?', [total, customerId]);
+    await simulateCrash(2);
 
     // Step 3: deduct the quantity from the product's stock
     await conn.execute('UPDATE products SET stock = stock - ? WHERE id = ?', [quantity, productId]);
+    await simulateCrash(3);
 
     // Step 4: insert a new order record
     const [orderResult] = await conn.execute(
       'INSERT INTO orders (customer_id, total_amount) VALUES (?, ?)', [customerId, total]);
+    await simulateCrash(4);
 
     // Step 5: insert the order line item
     await conn.execute(
@@ -123,7 +139,7 @@ async function placeOrder(customerId, productId, quantity) {
     return orderResult.insertId;
   } catch (error) {
     await conn.rollback();
-    console.log(`ROLLBACK -> ${error.message}. No data was changed.`);
+    console.log(`ROLLBACK -> ${error.message}. All changes of this transaction were undone.`);
     return null;
   } finally {
     conn.release();
@@ -155,6 +171,13 @@ async function main() {
 
     console.log('\n=== Case 3: out of stock ===');
     await placeOrder(1, 2, 2);   // 2 x K2 = 4,400,000 (Tri can pay) but only 1 K2 left
+
+    console.log('\n=== Case 4: unexpected error AFTER Steps 2-4 already changed the data ===');
+    await placeOrder(1, 3, 5, { failAfterStep: 4 });   // Tri buys 5 x Mouse Pad = 1,000,000
+    const [[tri]] = await pool.query('SELECT balance FROM customers WHERE id = 1');
+    const [[pad]] = await pool.query('SELECT stock FROM products WHERE id = 3');
+    const [[cnt]] = await pool.query('SELECT COUNT(*) AS total FROM orders');
+    console.log(`   after ROLLBACK: balance = ${tri.balance}, stock = ${pad.stock}, orders = ${cnt.total} -> everything was restored`);
 
     await showState('FINAL STATE (only Case 1 was saved)');
   } catch (error) {

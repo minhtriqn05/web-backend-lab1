@@ -4,7 +4,7 @@
 - **Class:** CSBU109.R11.KHBC
 - **Student:** Nguyễn Minh Trí – 23560042
 
-Source code of the **Lab 1** and **Lab 1B** in-class exercises. Screenshots and explanations for every question are in the submitted report `Lab1_23560042_NguyenMinhTri.docx`.
+Source code of the **Lab 1** and **Lab 1B** in-class exercises and homework (Lab 1 Homework 1–2, Lab 1B Homework 1–2). Screenshots and explanations for every question are in the submitted reports `Lab1_23560042_NguyenMinhTri.docx` (LAB 1 and LAB 1 - Homework).
 
 ## Repository structure
 
@@ -19,6 +19,11 @@ Source code of the **Lab 1** and **Lab 1B** in-class exercises. Screenshots and 
 | `lab1b/mysql_demo.js`, `lab1b/mysql_extended.js` | Lab 1B – Exercise 2: `mysql2` connection pool, prepared statements, Questions 1–8 |
 | `sql/lab1b_ex2_check.sql` | Lab 1B – Exercise 2: SQL used to cross-check the results in MySQL Workbench |
 | `lab1b/mongoose_demo.js`, `lab1b/mongoose_extended.js` | Lab 1B – Exercise 3: Mongoose schema, validation, hooks, Questions 1–10 |
+| `homework/lab1_hw1_library_db.sql` | Lab 1 – Homework 1: `library_db` (`authors`, `books`, `borrow_records`) and a 3-table JOIN |
+| `homework/lab1_hw2_blog_db.js` | Lab 1 – Homework 2: `blog_db.posts` (mongosh): Query 1, Query 2, `$push` + `$inc`, aggregation by category |
+| `lab1b/homework_sql_transaction.js` | Lab 1B – Homework 1: order placement in one SQL transaction (5 steps, `commit` / `rollback`) |
+| `homework/lab1b_hw1_check.sql` | Lab 1B – Homework 1: SQL used to cross-check the results in MySQL Workbench |
+| `lab1b/homework_many_to_many.js` | Lab 1B – Homework 2: Mongoose many-to-many `Student` ↔ `Course`, `enrollCourse()` / `dropCourse()` |
 
 ## How to run
 
@@ -65,6 +70,19 @@ node mysql_extended.js     # Exercise 2 – Questions 1–8 (resets the sample d
 node mongoose_demo.js      # Exercise 3 – basic CRUD
 node mongoose_extended.js  # Exercise 3 – Questions 1–10 (resets the users and posts collections)
 ```
+
+### Homework
+
+- Lab 1 – Homework 1: run `homework/lab1_hw1_library_db.sql` in MySQL Workbench (it drops and recreates `library_db`, so it can be re-run).
+- Lab 1 – Homework 2: run the commands in `homework/lab1_hw2_blog_db.js` in MongoDB Compass / mongosh (`localhost:27017`).
+- Lab 1B – Homework 1 and 2 (from the `lab1b` folder, same `.env` as above):
+
+```bash
+node homework_sql_transaction.js   # creates store_transaction_db, runs 1 COMMIT case and 3 ROLLBACK cases (incl. a simulated crash after Step 4)
+node homework_many_to_many.js      # database course_registration_db, enrollCourse() / dropCourse() scenario
+```
+
+Then run `homework/lab1b_hw1_check.sql` in MySQL Workbench to cross-check Homework 1.
 
 ## Notes
 
